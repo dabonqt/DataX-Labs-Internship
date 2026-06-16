@@ -1,4 +1,6 @@
-# Customer Personality Analysis — Data Cleaning & Preprocessing
+# Customer Personality Analysis
+
+## Task: Data Cleaning & Preprocessing
 
 **Internship:** DataX Labs — Day 1  
 **Author:** Lord Davon Mendoza  
@@ -60,7 +62,6 @@ A structured inspection of the raw dataset before any modifications:
 
 ## Output
 
-A cleaned `DataFrame` (`df`) with:
 - Standardized column names
 - No missing values in key columns
 - Correct data types across all columns
