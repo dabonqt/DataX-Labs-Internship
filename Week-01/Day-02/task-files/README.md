@@ -81,8 +81,6 @@ The dashboard was designed to provide a high-level overview of business performa
 
 ## Dashboard Preview
 
-> Add your dashboard screenshot here.
-
 ```text
 /dashboard.png
 ```
