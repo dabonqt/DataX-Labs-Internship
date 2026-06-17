@@ -82,7 +82,9 @@ The dashboard was designed to provide a high-level overview of business performa
 ## Dashboard Preview
 
 ```text
-![Sales Dashboard](dashboard.png)
+
+![Sales Dashboard](task-files/dashboard.png)
+
 ```
 
 ---
