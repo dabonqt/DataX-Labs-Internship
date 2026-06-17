@@ -1,5 +1,11 @@
-# Day 2 – Sales Dashboard in Power BI
+# Sales Dashboard — Power BI
 
+## Task: Data Cleaning & Preprocessing
+
+**Internship:** DataX Labs — Day 2  
+**Author:** Lord Davon Mendoza  
+**Dataset:** `` (Customer Personality Analysis)  
+**Tools:** Python, Pandas, Google Colab
 
 ## Tools Used
 
