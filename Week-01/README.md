@@ -9,7 +9,7 @@
 
 ---
 
-## 🔄 Project Workflow
+## Project Workflow
 
 ### 1. Data Preparation
 
