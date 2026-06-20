@@ -27,7 +27,8 @@ Use SQL queries to extract and analyze data from a relational database, applying
 
 ## Dataset
 
-The dataset used for this activity are: `customers (1).csv` , `orders (1).csv` , `products (1).csv`
+The datasets used for this activity are: `customers (1).csv` , `orders (1).csv` , `products (1).csv`
+and were extracted from Kaggle.
     
 Three tables from a UK-based retail operation, covering **January 2023 – May 2024**.
 
