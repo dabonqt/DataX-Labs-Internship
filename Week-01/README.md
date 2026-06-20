@@ -2,7 +2,7 @@
 
 ## Task: Create Interactive Dashboard 
 
-**Internship:** DataX Labs — Day 3 
+**Internship:** DataX Labs — Day 3
 **Author:** Lord Davon Mendoza  
 **Dataset:** `ecommerce_sales_data.csv` 
 **Tools:** Power BI(DAX,PowerQuery)
