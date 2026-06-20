@@ -47,10 +47,13 @@ Three tables from a UK-based retail operation, covering **January 2023 – May 2
 Enriches every order with customer demographics and product information. Introduces a derived `revenue` column (`quantity × price`) used as the foundation for all downstream analysis.
 
 ```sql
+
+CREATE OR REPLACE VIEW `dataxlabs-internship.orders.view` AS 
+
 SELECT
     o.order_id,
     o.order_date,
-    c.customer_id,
+    o.customer_id,
     c.city,
     c.gender,
     c.loyalty_member,
@@ -58,11 +61,13 @@ SELECT
     p.category,
     p.price,
     o.quantity,
-    o.quantity * p.price  AS revenue,
+    o.quantity * p.price AS revenue,
     o.payment_method
 FROM `dataxlabs-internship.orders.orders` o
-JOIN `dataxlabs-internship.customers.customers` c ON o.customer_id = c.customer_id
-JOIN `dataxlabs-internship.products.product`   p ON o.product_id  = p.product_id;
+JOIN `dataxlabs-internship.customer.customer` c ON o.customer_id = c.customer_id
+JOIN `dataxlabs-internship.products.product` p ON o.product_id = p.product_id;
+
+
 ```
 
 ---
@@ -72,19 +77,17 @@ Summarizes spend, order count, and average order value per customer. Useful for 
 
 ```sql
 SELECT
-    c.customer_id,
-    c.city,
-    c.loyalty_member,
-    COUNT(o.order_id)            AS total_orders,
-    SUM(o.quantity * p.price)    AS total_revenue,
-    AVG(o.quantity * p.price)    AS avg_order_value
+  c.customer_id,
+  c.city,
+  c.loyalty_member,
+  COUNT(o.order_id) AS total_orders,
+  ROUND(SUM(o.quantity * p.price),2)   AS total_revenue,
+  ROUND(AVG(o.quantity * p.price),2)   AS avg_order_value  
 FROM `dataxlabs-internship.orders.orders` o
-JOIN `dataxlabs-internship.customers.customers` c ON o.customer_id = c.customer_id
-JOIN `dataxlabs-internship.products.product`   p ON o.product_id  = p.product_id
-GROUP BY
-    c.customer_id, c.city, c.loyalty_member
-ORDER BY
-    total_revenue DESC;
+JOIN `dataxlabs-internship.customer.customer` c ON o.customer_id = c.customer_id
+JOIN `dataxlabs-internship.products.product` p ON o.product_id = p.product_id
+GROUP BY c.customer_id, c.city, c.loyalty_member
+ORDER BY total_revenue DESC;
 ```
 
 ---
@@ -94,18 +97,18 @@ Breaks down sales performance across all combinations of product category and cu
 
 ```sql
 SELECT
-    c.city,
-    p.category,
-    COUNT(o.order_id)          AS total_orders,
-    SUM(o.quantity * p.price)  AS total_revenue,
-    ROUND(AVG(p.price), 2)     AS avg_product_price
+  c.city,
+  p.category,
+  COUNT(o.order_id) AS total_orders,
+  ROUND(SUM(o.quantity 
+      * p.price),2) AS total_revenue,
+  ROUND(AVG(p.price),2) AS avg_product_price          
 FROM `dataxlabs-internship.orders.orders` o
-JOIN `dataxlabs-internship.customers.customers` c ON o.customer_id = c.customer_id
-JOIN `dataxlabs-internship.products.product`   p ON o.product_id  = p.product_id
-GROUP BY
-    c.city, p.category
-ORDER BY
-    c.city, total_revenue DESC;
+JOIN `dataxlabs-internship.customer.customer` c ON o.customer_id = c.customer_id
+JOIN `dataxlabs-internship.products.product` p ON o.product_id = p.product_id
+GROUP BY c.city, p.category
+ORDER BY c.city, total_revenue DESC;
+
 ```
 
 ---
@@ -115,20 +118,20 @@ Assigns two ranks per customer: one globally and one within their city. Demonstr
 
 ```sql
 SELECT
-    customer_id,
-    city,
-    total_revenue,
-    DENSE_RANK() OVER (ORDER BY total_revenue DESC)                        AS overall_rank,
-    DENSE_RANK() OVER (PARTITION BY city ORDER BY total_revenue DESC)      AS rank_within_city
-FROM (
+  customer_id,
+  city,
+  total_revenue,
+  DENSE_RANK() OVER (ORDER BY total_revenue DESC) AS overall_rank,
+  DENSE_RANK() OVER (PARTITION BY city ORDER BY total_revenue DESC) AS rank_in_city
+FROM(
     SELECT
-        c.customer_id,
-        c.city,
-        SUM(o.quantity * p.price) AS total_revenue
-    FROM `dataxlabs-internship.orders.orders` o
-    JOIN `dataxlabs-internship.customers.customers` c ON o.customer_id = c.customer_id
-    JOIN `dataxlabs-internship.products.product`   p ON o.product_id  = p.product_id
-    GROUP BY c.customer_id, c.city
+      c.customer_id,
+      c.city,
+      ROUND(SUM(o.quantity * p.price),2) AS total_revenue
+      FROM `dataxlabs-internship.orders.orders` o
+      JOIN `dataxlabs-internship.customer.customer` c ON o.customer_id = c.customer_id
+      JOIN `dataxlabs-internship.products.product` p ON o.product_id = p.product_id
+      GROUP BY c.customer_id, c.city
 ) AS customer_revenue
 ORDER BY overall_rank;
 ```
@@ -140,17 +143,17 @@ Calculates cumulative revenue month by month. Uses `ROWS UNBOUNDED PRECEDING` to
 
 ```sql
 SELECT
-    order_month,
-    monthly_revenue,
-    SUM(monthly_revenue) OVER (ORDER BY order_month ROWS UNBOUNDED PRECEDING)
-        AS running_total
-FROM (
-    SELECT
-        DATE_TRUNC(CAST(o.order_date AS DATE), MONTH) AS order_month,
-        SUM(o.quantity * p.price)                      AS monthly_revenue
-    FROM `dataxlabs-internship.orders.orders` o
-    JOIN `dataxlabs-internship.products.product` p ON o.product_id = p.product_id
-    GROUP BY DATE_TRUNC(CAST(o.order_date AS DATE), MONTH)
+  order_month,
+  monthly_revenue,
+  SUM(monthly_revenue) OVER (ORDER BY order_month ROWS UNBOUNDED PRECEDING)
+    AS running_total 
+FROM(
+  SELECT
+    DATE_TRUNC(CAST(o.order_date AS DATE),MONTH) AS order_month,
+    SUM(o.quantity * p.price) AS monthly_revenue
+  FROM `dataxlabs-internship.orders.orders` o
+  JOIN `dataxlabs-internship.products.product` p ON o.product_id = p.product_id
+  GROUP BY DATE_TRUNC(CAST(o.order_date AS DATE),MONTH)
 ) AS monthly
 ORDER BY order_month;
 ```
@@ -162,24 +165,24 @@ Compares each month's revenue to the previous month's. Uses `NULLIF` on the deno
 
 ```sql
 SELECT
-    order_month,
-    monthly_revenue,
-    LAG(monthly_revenue) OVER (ORDER BY order_month)  AS prev_month_revenue,
-    monthly_revenue - LAG(monthly_revenue) OVER (ORDER BY order_month)  AS revenue_change,
-    ROUND(
-        100.0 * (monthly_revenue - LAG(monthly_revenue) OVER (ORDER BY order_month))
-              / NULLIF(LAG(monthly_revenue) OVER (ORDER BY order_month), 0),
-        2
-    ) AS pct_change
-FROM (
-    SELECT
-        DATE_TRUNC(CAST(o.order_date AS DATE), MONTH) AS order_month,
-        SUM(o.quantity * p.price)                      AS monthly_revenue
-    FROM `dataxlabs-internship.orders.orders` o
-    JOIN `dataxlabs-internship.products.product` p ON o.product_id = p.product_id
-    GROUP BY DATE_TRUNC(CAST(o.order_date AS DATE), MONTH)
+  order_month,
+  monthly_revenue,
+  LAG(monthly_revenue) OVER (ORDER BY order_month) AS prev_month_revenue,
+  monthly_revenue - LAG(monthly_revenue) OVER (ORDER BY order_month) AS revenue_change,
+
+  ROUND(100.0 * (monthly_revenue - LAG(monthly_revenue)
+	OVER (ORDER BY order_month) / NULLIF(LAG(monthly_revenue)
+	OVER (ORDER BY order_month),0)),2) AS percent_change
+FROM
+(
+  SELECT
+    DATE_TRUNC(CAST(o.order_date AS DATE),MONTH) AS order_month,
+    SUM(o.quantity * p.price) AS monthly_revenue
+  FROM `dataxlabs-internship.orders.orders` o
+  JOIN `dataxlabs-internship.products.product` p ON o.product_id = p.product_id
+  GROUP BY DATE_TRUNC(CAST(o.order_date AS DATE),MONTH)
+  
 ) AS monthly
-ORDER BY order_month;
 ```
 
 ---
@@ -189,22 +192,21 @@ Returns exactly one top-revenue product per category using the "rank then filter
 
 ```sql
 SELECT
-    category,
-    product_name,
-    total_revenue,
-    revenue_rank
-FROM (
-    SELECT
-        p.category,
-        p.product_name,
-        SUM(o.quantity * p.price)                                     AS total_revenue,
-        ROW_NUMBER() OVER (
-            PARTITION BY p.category
-            ORDER BY SUM(o.quantity * p.price) DESC
-        )                                                              AS revenue_rank
-    FROM `dataxlabs-internship.orders.orders` o
-    JOIN `dataxlabs-internship.products.product` p ON o.product_id = p.product_id
-    GROUP BY p.category, p.product_name
+  category,
+  product_name,
+  total_revenue,
+  revenue_rank
+FROM(
+  SELECT
+    p.category,
+    p.product_name,
+    SUM(o.quantity * p.price) AS total_revenue,
+    ROW_NUMBER() OVER (
+      PARTITION BY p.category
+      ORDER BY SUM(o.quantity * p.price) DESC) AS revenue_rank
+  FROM `dataxlabs-internship.orders.orders` o
+  JOIN `dataxlabs-internship.products.product` p ON o.product_id = p.product_id
+  GROUP BY p.category, p.product_name
 ) AS ranked
 WHERE revenue_rank = 1
 ORDER BY total_revenue DESC;
@@ -222,6 +224,3 @@ ORDER BY total_revenue DESC;
 - **BigQuery `DATE_TRUNC` syntax:** `DATE_TRUNC(date_expr, MONTH)` — date expression comes first, part is an unquoted keyword (differs from PostgreSQL's reversed-argument style).
 
 ---
-
-*DataX Labs Internship · Data Analyst Track · Day 4*
-
